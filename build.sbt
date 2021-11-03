@@ -1,5 +1,6 @@
 course := "effective-scala"
 assignment := "todo"
+ThisBuild / scalaVersion := "3.0.0-RC2"
 
 val DottyVersion = "3.0.0"
 val Http4sVersion = "1.0.0-M4"
