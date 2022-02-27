@@ -2,6 +2,8 @@ course := "effective-scala"
 assignment := "todo"
 ThisBuild / scalaVersion := "3.0.0-RC2"
 
+javacOptions ++= Seq("-source", "1.13", "-target", "1.13", "-Xlint")
+
 val DottyVersion = "3.0.0"
 val Http4sVersion = "1.0.0-M4"
 val CirceVersion = "0.13.0"
@@ -22,3 +24,17 @@ libraryDependencies ++= Seq(
 )
 
 scalacOptions += "-language:implicitConversions"
+
+initialize := {
+  val _ = initialize.value // run the previous initialization
+  val required = "13"
+  val current  = sys.props("java.specification.version")
+  assert(current == required, s"Unsupported JDK: java.specification.version $current != $required")
+}
+
+//javacOptions ++= Seq("-source", "1.13", "-target", "1.13", "-Xlint")
+
+//scalacOptions += "-target:jvm-1.13"
+//javacOptions ++= Seq("-source", "1.13", "-target", "1.13")
+//javacOptions ++= Seq("-source", "1.13", "-target", "1.13")
+//javacOptions ++= Seq("-source", "1.13")
