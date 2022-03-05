@@ -12,8 +12,6 @@ import todo.data.*
 /**
  * The PersistentModel is a model that saves all data to files, meaning that
  * tasks persist between restarts.
- *
- * You should modify this file.
  */
 object PersistentModel extends Model:
   import Codecs.given
@@ -22,7 +20,14 @@ object PersistentModel extends Model:
   val tasksPath = Paths.get("tasks.json")
   /** Path where the next id is saved */
   val idPath = Paths.get("id.json")
-
+  val defaultTasks = List(
+    Id(0) -> Task(State.completedNow, "Complete Effective Scala Week 2", None, List(Tag("programming"), Tag("scala"))),
+    Id(1) -> Task(State.Active, "Complete Effective Scala Week 3", Some("Finish the todo list exercise"), List(Tag("programming"), Tag("scala"), Tag("encapsulation"), Tag("sbt"))),
+    Id(2) -> Task(State.Active, "Make a sandwich", Some("Cheese and salad or ham and tomato?"), List(Tag("food"), Tag("lunch")))
+  )
+  private var idStore = loadId()
+  private val idGenerator = IdGenerator(idStore)
+  private var tasksStore = loadTasks()
   /**
    * Load Tasks from a file. Return an empty task list if the file does not exist,
    * and throws an exception if decoding the file fails.
@@ -55,8 +60,6 @@ object PersistentModel extends Model:
   def load[A](path: Path)(using decoder: Decoder[A]): A = {
     val str = Files.readString(path, StandardCharsets.UTF_8)
 
-    // In a production system we would want to pay more attention to error
-    // handling than we do here, but this is sufficient for the case study.
     decode[A](str) match {
       case Right(result) => result
       case Left(error) => throw error
@@ -89,35 +92,43 @@ object PersistentModel extends Model:
     Files.writeString(path, json.spaces2, StandardCharsets.UTF_8)
     ()
 
-  /* Hint: there are two pieces of state we need to implement the model:
-   * - the tasks
-   * - the next Id
-   * (The InMemoryModel uses the same.)
-   */
-
   def create(task: Task): Id =
-    ???
+    val id = idGenerator.nextId()
+    tasksStore = Tasks(tasksStore.toList :+ (id, task))
+    saveTasks(tasksStore)
+    saveId(id)
+    id
 
   def read(id: Id): Option[Task] =
-    ???
+    tasksStore.toList.find((i, t) => {i == id}) match {
+      case Some(i: Id, t: Task) => Some(t)
+      case None => None
+    }
 
   def update(id: Id)(f: Task => Task): Option[Task] =
-    ???
+    tasksStore = Tasks(tasksStore.toMap.updatedWith(id)(opt => opt.map(f)))
+    tasksStore.toMap.get(id)
 
   def delete(id: Id): Boolean =
-    ???
+    val before = tasksStore.toList.size
+    tasksStore = Tasks(tasksStore.toMap.removed(id))
+    // TODO printf("before: " + before.toString + " after: " + tasksStore.toList.size.toString + "\n")
+    before > tasksStore.toList.size
 
   def tasks: Tasks =
-    ???
+    tasksStore
 
   def tasks(tag: Tag): Tasks =
-    ???
+    Tasks(tasksStore.toMap.filter((K, V) => V.tags.contains(tag)))
 
   def complete(id: Id): Option[Task] =
-    ???
+    tasksStore.toMap.get(id) match {
+      case Some(t: Task) => Option(t.complete)
+      case None => None
+    }
 
   def tags: Tags =
-    ???
+    Tags(tasksStore.toList.flatMap(_._2.tags).distinct)
 
   def clear(): Unit =
-    ???
+    tasksStore = Tasks(List.empty)
